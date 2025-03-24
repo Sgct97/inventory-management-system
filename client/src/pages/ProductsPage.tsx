@@ -23,6 +23,11 @@ import {
   Chip,
   Tooltip,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -42,6 +47,8 @@ interface Product {
   reorderLevel: number;
   supplierId: string;
   supplierName?: string;
+  barcode?: string;
+  sku?: string;
 }
 
 interface ProductFormData {
@@ -49,9 +56,13 @@ interface ProductFormData {
   description: string;
   category: string;
   price: number;
+  cost: number;
   quantity: number;
   reorderLevel: number;
   supplierId: string;
+  supplier: string;
+  barcode: string;
+  sku: string;
 }
 
 interface Supplier {
@@ -64,9 +75,13 @@ const initialFormData: ProductFormData = {
   description: '',
   category: '',
   price: 0,
+  cost: 0,
   quantity: 0,
   reorderLevel: 5,
   supplierId: '',
+  supplier: '',
+  barcode: '',
+  sku: '',
 };
 
 const ProductsPage: React.FC = () => {
@@ -149,9 +164,13 @@ const ProductsPage: React.FC = () => {
         description: product.description,
         category: product.category,
         price: product.price,
+        cost: product.price,
         quantity: product.quantity,
         reorderLevel: product.reorderLevel,
         supplierId: product.supplierId,
+        supplier: product.supplierName || '',
+        barcode: product.barcode || '',
+        sku: product.sku || '',
       });
       setEditingId(product.id);
     } else {
@@ -210,6 +229,10 @@ const ProductsPage: React.FC = () => {
     if (formData.price <= 0) {
       errors.price = 'Price must be greater than 0';
     }
+
+    if (formData.cost <= 0) {
+      errors.cost = 'Cost must be greater than 0';
+    }
     
     if (formData.quantity < 0) {
       errors.quantity = 'Quantity cannot be negative';
@@ -221,6 +244,10 @@ const ProductsPage: React.FC = () => {
     
     if (!formData.supplierId) {
       errors.supplierId = 'Supplier is required';
+    }
+
+    if (!formData.sku.trim()) {
+      errors.sku = 'SKU is required';
     }
     
     setFormErrors(errors);
@@ -234,13 +261,21 @@ const ProductsPage: React.FC = () => {
     }
     
     setSubmitLoading(true);
+    setError(null);
+
     try {
+      // Create payload with correct field names for server
+      const payload = {
+        ...formData,
+        supplier: formData.supplierId // Map the supplierId to supplier as expected by server
+      };
+
       if (editingId) {
         // Update existing product
-        await axios.put(`/api/products/${editingId}`, formData);
+        await axios.put(`/api/products/${editingId}`, payload);
       } else {
         // Create new product
-        await axios.post('/api/products', formData);
+        await axios.post('/api/products', payload);
       }
       
       // Refresh product list
@@ -430,7 +465,6 @@ const ProductsPage: React.FC = () => {
                 onChange={handleInputChange}
                 error={!!formErrors.name}
                 helperText={formErrors.name}
-                margin="normal"
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -442,7 +476,6 @@ const ProductsPage: React.FC = () => {
                 onChange={handleInputChange}
                 error={!!formErrors.category}
                 helperText={formErrors.category}
-                margin="normal"
               />
             </Grid>
             <Grid item xs={12}>
@@ -452,14 +485,13 @@ const ProductsPage: React.FC = () => {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                error={!!formErrors.description}
-                helperText={formErrors.description}
-                margin="normal"
                 multiline
                 rows={2}
+                error={!!formErrors.description}
+                helperText={formErrors.description}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 fullWidth
                 label="Price"
@@ -467,13 +499,29 @@ const ProductsPage: React.FC = () => {
                 type="number"
                 value={formData.price}
                 onChange={handleInputChange}
+                InputProps={{
+                  startAdornment: '$',
+                }}
                 error={!!formErrors.price}
                 helperText={formErrors.price}
-                margin="normal"
-                InputProps={{ startAdornment: '$' }}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                fullWidth
+                label="Cost"
+                name="cost"
+                type="number"
+                value={formData.cost}
+                onChange={handleInputChange}
+                InputProps={{
+                  startAdornment: '$',
+                }}
+                error={!!formErrors.cost}
+                helperText={formErrors.cost}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 fullWidth
                 label="Quantity"
@@ -483,10 +531,9 @@ const ProductsPage: React.FC = () => {
                 onChange={handleInputChange}
                 error={!!formErrors.quantity}
                 helperText={formErrors.quantity}
-                margin="normal"
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 fullWidth
                 label="Reorder Level"
@@ -496,41 +543,85 @@ const ProductsPage: React.FC = () => {
                 onChange={handleInputChange}
                 error={!!formErrors.reorderLevel}
                 helperText={formErrors.reorderLevel}
-                margin="normal"
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth error={!!formErrors.supplierId}>
+                <InputLabel>Supplier</InputLabel>
+                <Select
+                  name="supplierId"
+                  value={formData.supplierId}
+                  onChange={e => {
+                    const selectedSupplierId = e.target.value as string;
+                    
+                    setFormData({
+                      ...formData,
+                      supplierId: selectedSupplierId,
+                      supplier: selectedSupplierId // Set the supplier field to match the ID as required by server
+                    });
+                    
+                    if (formErrors.supplierId) {
+                      setFormErrors({
+                        ...formErrors,
+                        supplierId: '',
+                      });
+                    }
+                  }}
+                  label="Supplier"
+                >
+                  <MenuItem value="">
+                    <em>Select a supplier</em>
+                  </MenuItem>
+                  {suppliers.map((supplier) => (
+                    <MenuItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {formErrors.supplierId && (
+                  <FormHelperText>{formErrors.supplierId}</FormHelperText>
+                )}
+              </FormControl>
+            </Grid>
+
+            {/* Add SKU and Barcode fields */}
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                select
-                SelectProps={{ native: true }}
-                label="Supplier"
-                name="supplierId"
-                value={formData.supplierId}
+                label="SKU (Stock Keeping Unit)"
+                name="sku"
+                value={formData.sku}
                 onChange={handleInputChange}
-                error={!!formErrors.supplierId}
-                helperText={formErrors.supplierId}
-                margin="normal"
-              >
-                <option value="">Select a supplier</option>
-                {suppliers.map((supplier) => (
-                  <option key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </option>
-                ))}
-              </TextField>
+                helperText={formErrors.sku || "Unique identifier for internal use"}
+                error={!!formErrors.sku}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Barcode"
+                name="barcode"
+                value={formData.barcode}
+                onChange={handleInputChange}
+                helperText="Product barcode (UPC, EAN, etc.) for scanning"
+              />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button 
+          <Button
             onClick={handleSubmitForm}
             variant="contained"
             disabled={submitLoading}
             startIcon={submitLoading ? <CircularProgress size={20} /> : null}
           >
-            {submitLoading ? 'Saving...' : 'Save'}
+            {submitLoading
+              ? 'Saving...'
+              : editingId
+              ? 'Update Product'
+              : 'Add Product'}
           </Button>
         </DialogActions>
       </Dialog>

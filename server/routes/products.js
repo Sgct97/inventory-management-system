@@ -98,7 +98,7 @@ router.get('/:id', auth, async (req, res) => {
 router.post(
   '/',
   [
-    adminAuth,
+    auth,
     [
       check('name', 'Name is required').not().isEmpty(),
       check('description', 'Description is required').not().isEmpty(),
@@ -374,6 +374,29 @@ router.get('/categories/all', auth, async (req, res) => {
   } catch (error) {
     logger.error('Get product categories error', { error: error.message });
     res.status(500).json({ message: 'Server error retrieving product categories' });
+  }
+});
+
+/**
+ * @route   GET api/products/barcode/:code
+ * @desc    Get product by barcode
+ * @access  Private
+ */
+router.get('/barcode/:code', auth, async (req, res) => {
+  try {
+    const products = await readData('products.json');
+    const product = products.find(product => product.barcode === req.params.code);
+    
+    if (!product) {
+      logger.warn('Product not found by barcode', { barcode: req.params.code });
+      return res.status(404).json({ message: 'Product not found with that barcode' });
+    }
+    
+    logger.info('Product retrieved by barcode', { productId: product.id });
+    res.json(product);
+  } catch (error) {
+    logger.error('Error getting product by barcode', { error: error.message, barcode: req.params.code });
+    res.status(500).json({ message: 'Server error retrieving product' });
   }
 });
 

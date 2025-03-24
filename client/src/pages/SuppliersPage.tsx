@@ -113,10 +113,11 @@ const SuppliersPage: React.FC = () => {
   
   // Handle search
   const filteredSuppliers = suppliers.filter((supplier) => 
-    supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    supplier.contactName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    supplier.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    typeof supplier.address === 'string' && supplier.address.toLowerCase().includes(searchQuery.toLowerCase())
+    (supplier.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (supplier.contactName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (supplier.email?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (typeof supplier.address === 'string' && 
+      (supplier.address?.toLowerCase() || '').includes(searchQuery.toLowerCase()))
   );
   
   // Pagination handlers
@@ -217,6 +218,8 @@ const SuppliersPage: React.FC = () => {
     }
     
     setSubmitLoading(true);
+    setError(null);
+    
     try {
       if (editingId) {
         // Update existing supplier

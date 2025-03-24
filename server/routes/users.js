@@ -317,4 +317,73 @@ router.put(
   }
 );
 
+/**
+ * @route   PUT api/users/profile
+ * @desc    Update user's own profile
+ * @access  Private
+ */
+router.put('/profile', auth, async (req, res) => {
+  const { name, email, currentPassword, newPassword } = req.body;
+  
+  try {
+    // Get user from auth middleware
+    const userId = req.user.id;
+    
+    // Get user by ID
+    let user = await getItemById('users.json', userId);
+    
+    if (!user) {
+      logger.warn('Update profile failed: User not found', { userId });
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Prepare updated user data
+    const updatedData = {
+      firstName: name ? name.split(' ')[0] : user.firstName,
+      lastName: name ? name.split(' ').slice(1).join(' ') : user.lastName,
+      email: email || user.email,
+      updatedAt: new Date().toISOString()
+    };
+    
+    // If password change is requested
+    if (newPassword && currentPassword) {
+      // Verify current password
+      const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+      
+      if (!isMatch) {
+        logger.warn('Update profile failed: Incorrect current password', { userId });
+        return res.status(401).json({ message: 'Current password is incorrect' });
+      }
+      
+      // Hash new password
+      const salt = await bcrypt.genSalt(10);
+      updatedData.passwordHash = await bcrypt.hash(newPassword, salt);
+    }
+    
+    // Update user
+    user = await updateItem('users.json', userId, updatedData);
+    
+    if (!user) {
+      logger.warn('Update profile failed: User not found during update operation', { userId });
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    logger.info('User profile updated successfully', { userId });
+    
+    // Remove password from response
+    const { passwordHash, ...userWithoutPassword } = user;
+    
+    // Create updated user object with full name for client
+    const responseUser = {
+      ...userWithoutPassword,
+      name: `${user.firstName} ${user.lastName}`.trim()
+    };
+    
+    res.json(responseUser);
+  } catch (error) {
+    logger.error('Update profile error', { userId: req.user.id, error: error.message });
+    res.status(500).json({ message: 'Server error updating profile' });
+  }
+});
+
 module.exports = router; 

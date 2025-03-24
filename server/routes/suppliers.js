@@ -98,7 +98,7 @@ router.get('/:id', auth, async (req, res) => {
 router.post(
   '/',
   [
-    adminAuth,
+    auth,
     [
       check('name', 'Name is required').not().isEmpty(),
       check('email', 'Please include a valid email').isEmail(),

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Box,
@@ -14,9 +14,11 @@ import {
   ListItemText,
   Toolbar,
   Typography,
+  useMediaQuery,
+  useTheme,
+  Avatar,
   Menu,
   MenuItem,
-  Avatar,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -24,83 +26,108 @@ import {
   Inventory as InventoryIcon,
   LocalShipping as ShippingIcon,
   Receipt as ReceiptIcon,
+  QrCodeScanner as ScannerIcon,
   Person as PersonIcon,
   Logout as LogoutIcon,
-  Settings as SettingsIcon,
 } from '@mui/icons-material';
-
 import { useAuth } from '../../contexts/AuthContext';
 
+// Define sidebar width
 const drawerWidth = 240;
 
+// Interface for navigation items
 interface NavigationItem {
   text: string;
   path: string;
   icon: React.ReactNode;
-  allowedRoles?: string[];
+  roles?: string[];
 }
 
+// Define navigation items
 const navigationItems: NavigationItem[] = [
-  { text: 'Dashboard', path: '/', icon: <DashboardIcon /> },
-  { text: 'Products', path: '/products', icon: <InventoryIcon /> },
-  { text: 'Suppliers', path: '/suppliers', icon: <ShippingIcon /> },
-  { text: 'Transactions', path: '/transactions', icon: <ReceiptIcon /> },
+  {
+    text: 'Dashboard',
+    path: '/',
+    icon: <DashboardIcon />,
+  },
+  {
+    text: 'Products',
+    path: '/products',
+    icon: <InventoryIcon />,
+  },
+  {
+    text: 'Quick Scan',
+    path: '/quick-scan',
+    icon: <ScannerIcon />,
+  },
+  {
+    text: 'Suppliers',
+    path: '/suppliers',
+    icon: <ShippingIcon />,
+  },
+  {
+    text: 'Transactions',
+    path: '/transactions',
+    icon: <ReceiptIcon />,
+  },
+  {
+    text: 'Profile',
+    path: '/profile',
+    icon: <PersonIcon />,
+  },
 ];
 
 const Layout: React.FC = () => {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const { user, logout } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [drawerOpen, setDrawerOpen] = useState(!isMobile);
+  const [profileMenuAnchor, setProfileMenuAnchor] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
-  const location = useLocation();
+  const { user, logout } = useAuth();
 
+  // Handle drawer toggle
   const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+    setDrawerOpen(!drawerOpen);
   };
 
+  // Handle profile menu opening
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+    setProfileMenuAnchor(event.currentTarget);
   };
 
+  // Handle profile menu closing
   const handleProfileMenuClose = () => {
-    setAnchorEl(null);
+    setProfileMenuAnchor(null);
   };
 
+  // Handle logout
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const handleProfileClick = () => {
-    handleProfileMenuClose();
-    navigate('/profile');
-  };
-
+  // Create sidebar content
   const drawer = (
     <div>
       <Toolbar>
         <Typography variant="h6" noWrap component="div">
-          Inventory Mgmt
+          Inventory System
         </Typography>
       </Toolbar>
       <Divider />
       <List>
-        {navigationItems
-          .filter(
-            (item) =>
-              !item.allowedRoles || (user && item.allowedRoles.includes(user.role))
-          )
-          .map((item) => (
+        {navigationItems.map((item) => (
+          (!item.roles || (user && item.roles.includes(user.role))) && (
             <ListItem key={item.text} disablePadding>
-              <ListItemButton
-                selected={location.pathname === item.path}
-                onClick={() => navigate(item.path)}
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemButton onClick={() => navigate(item.path)}>
+                <ListItemIcon>
+                  {item.icon}
+                </ListItemIcon>
                 <ListItemText primary={item.text} />
               </ListItemButton>
             </ListItem>
-          ))}
+          )
+        ))}
       </List>
     </div>
   );
@@ -108,6 +135,8 @@ const Layout: React.FC = () => {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
+      
+      {/* App bar */}
       <AppBar
         position="fixed"
         sx={{
@@ -128,33 +157,42 @@ const Layout: React.FC = () => {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Inventory Management System
           </Typography>
-          <IconButton
-            size="large"
-            edge="end"
-            color="inherit"
-            aria-label="account of current user"
-            aria-haspopup="true"
-            onClick={handleProfileMenuOpen}
-          >
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-              {user?.name?.[0] || 'U'}
-            </Avatar>
-          </IconButton>
+          
+          {/* User profile section */}
+          <Box display="flex" alignItems="center">
+            <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'block' } }}>
+              {user?.name || 'User'}
+            </Typography>
+            <IconButton
+              onClick={handleProfileMenuOpen}
+              color="inherit"
+              aria-label="user profile"
+              aria-controls="profile-menu"
+              aria-haspopup="true"
+            >
+              <Avatar sx={{ width: 32, height: 32 }}>
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </Avatar>
+            </IconButton>
+          </Box>
+          
+          {/* Profile menu */}
           <Menu
-            anchorEl={anchorEl}
+            id="profile-menu"
+            anchorEl={profileMenuAnchor}
+            keepMounted
+            open={Boolean(profileMenuAnchor)}
+            onClose={handleProfileMenuClose}
             anchorOrigin={{
               vertical: 'bottom',
               horizontal: 'right',
             }}
-            keepMounted
             transformOrigin={{
               vertical: 'top',
               horizontal: 'right',
             }}
-            open={Boolean(anchorEl)}
-            onClose={handleProfileMenuClose}
           >
-            <MenuItem onClick={handleProfileClick}>
+            <MenuItem onClick={() => { navigate('/profile'); handleProfileMenuClose(); }}>
               <ListItemIcon>
                 <PersonIcon fontSize="small" />
               </ListItemIcon>
@@ -169,17 +207,19 @@ const Layout: React.FC = () => {
           </Menu>
         </Toolbar>
       </AppBar>
+      
+      {/* Sidebar drawer */}
       <Box
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        aria-label="navigation menu"
       >
+        {/* Mobile drawer */}
         <Drawer
           variant="temporary"
-          open={mobileOpen}
+          open={isMobile && drawerOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true, // Better open performance on mobile
+            keepMounted: true, // Better performance on mobile
           }}
           sx={{
             display: { xs: 'block', sm: 'none' },
@@ -188,6 +228,8 @@ const Layout: React.FC = () => {
         >
           {drawer}
         </Drawer>
+        
+        {/* Desktop drawer */}
         <Drawer
           variant="permanent"
           sx={{
@@ -199,13 +241,15 @@ const Layout: React.FC = () => {
           {drawer}
         </Drawer>
       </Box>
+      
+      {/* Main content area */}
       <Box
         component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
+        sx={{ 
+          flexGrow: 1, 
+          p: 3, 
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: '64px',
+          mt: '64px', // Toolbar height
         }}
       >
         <Outlet />

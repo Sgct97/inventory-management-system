@@ -1,54 +1,38 @@
 import React from 'react';
+import { Typography, Button, Container } from '@mui/material';
 import { Link } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  Typography,
-  Container,
-  Paper,
-} from '@mui/material';
-import {
-  SentimentDissatisfied as SadFaceIcon,
-  Home as HomeIcon,
-} from '@mui/icons-material';
 
 const NotFoundPage: React.FC = () => {
   return (
-    <Container maxWidth="md">
-      <Paper
-        elevation={3}
-        sx={{
-          p: 5,
-          mt: 10,
-          textAlign: 'center',
-          borderRadius: 2,
-        }}
+    <Container sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      minHeight: '70vh',
+      textAlign: 'center' 
+    }}>
+      <Typography variant="h1" color="primary" sx={{ fontSize: '80px', mb: 2 }}>
+        404
+      </Typography>
+      
+      <Typography variant="h4" gutterBottom>
+        Page Not Found
+      </Typography>
+      
+      <Typography variant="body1" color="text.secondary" paragraph>
+        The page you are looking for doesn't exist or has been moved.
+      </Typography>
+      
+      <Button 
+        component={Link} 
+        to="/" 
+        variant="contained" 
+        color="primary"
+        sx={{ mt: 2 }}
       >
-        <SadFaceIcon sx={{ fontSize: 100, color: 'text.secondary', mb: 2 }} />
-        
-        <Typography variant="h3" component="h1" gutterBottom>
-          404 - Page Not Found
-        </Typography>
-        
-        <Typography variant="h5" color="text.secondary" paragraph>
-          Oops! The page you are looking for does not exist.
-        </Typography>
-        
-        <Typography variant="body1" paragraph sx={{ maxWidth: 600, mx: 'auto', mb: 4 }}>
-          The page you requested could not be found. It might have been removed, 
-          renamed, or is temporarily unavailable.
-        </Typography>
-        
-        <Button
-          component={Link}
-          to="/"
-          variant="contained"
-          size="large"
-          startIcon={<HomeIcon />}
-        >
-          Back to Dashboard
-        </Button>
-      </Paper>
+        Back to Home
+      </Button>
     </Container>
   );
 };
